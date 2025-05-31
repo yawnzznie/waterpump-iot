@@ -1,0 +1,67 @@
+#define BLYNK_TEMPLATE_ID "ISI_PUNYA_KAMU"
+#define BLYNK_DEVICE_NAME "SmartFarm"
+#define BLYNK_AUTH_TOKEN "ISI_TOKEN_KAMU"
+
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+
+char ssid[] = "NAMA_WIFI";
+char pass[] = "PASSWORD_WIFI";
+
+const int soilPin = A0;
+const int relayPin = D1; //GPIO5
+const int buzzerPin = D2; //GPIO4
+
+int soilValue;
+int soilThreshold = 500;
+bool pompaManual = false;
+
+BlynkTimer timer;
+
+BLYNK_WRITE(V0) {
+  pompaManual = param.asInt();  // nilai dari tombol pompa
+}
+
+void sendSensor() {
+  soilValue = analogRead(soilPin);
+
+  // Status tanah
+  if (soilValue > soilThreshold) {
+    Blynk.virtualWrite(V1, "Tanah Kering");
+    
+    // Aktifkan alarm
+    digitalWrite(buzzerPin, HIGH);
+    Blynk.virtualWrite(V2, "ALARM: Tanah Kering!");
+    Blynk.virtualWrite(V3, 255); // LED alarm nyala
+
+  } else {
+    Blynk.virtualWrite(V1, "Tanah Basah");
+
+    // Matikan alarm
+    digitalWrite(buzzerPin, LOW);
+    Blynk.virtualWrite(V2, "Aman");
+    Blynk.virtualWrite(V3, 0);   // LED alarm mati
+  }
+
+  // Kontrol Pompa manual
+  if (pompaManual) {
+    digitalWrite(relayPin, LOW);  // Pompa ON
+  } else {
+    digitalWrite(relayPin, HIGH); // Pompa OFF
+  }
+}
+
+void setup() {
+  pinMode(relayPin, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+  digitalWrite(relayPin, HIGH);
+  digitalWrite(buzzerPin, LOW);
+
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+  timer.setInterval(2000L, sendSensor);
+}
+
+void loop() {
+  Blynk.run();
+  timer.run();
+}
