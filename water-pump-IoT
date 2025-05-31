@@ -4,61 +4,52 @@
 
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
+#include <DHT.h>
 
 char ssid[] = "NAMA_WIFI";
 char pass[] = "PASSWORD_WIFI";
 
+// Pin sensor dan aktuator
 const int soilPin = A0;
-const int relayPin = D1; //GPIO5
-const int buzzerPin = D2; //GPIO4
+const int buzzerPin = D2; // GPIO4
+#define DHTPIN D3          // GPIO0
+#define DHTTYPE DHT11
+
+DHT dht(DHTPIN, DHTTYPE);
 
 int soilValue;
 int soilThreshold = 500;
-bool pompaManual = false;
 
 BlynkTimer timer;
 
-BLYNK_WRITE(V0) {
-  pompaManual = param.asInt();  // nilai dari tombol pompa
-}
-
 void sendSensor() {
   soilValue = analogRead(soilPin);
+  float suhu = dht.readTemperature();
+  float kelembaban = dht.readHumidity();
 
-  // Status tanah
+  // Kirim data suhu dan kelembaban
+  Blynk.virtualWrite(V2, suhu);
+  Blynk.virtualWrite(V3, kelembaban);
+
+  // Cek status tanah
   if (soilValue > soilThreshold) {
-    Blynk.virtualWrite(V1, "Tanah Kering");
-    
-    // Aktifkan alarm
+    Blynk.virtualWrite(V0, "Tanah Kering");
     digitalWrite(buzzerPin, HIGH);
-    Blynk.virtualWrite(V2, "ALARM: Tanah Kering!");
-    Blynk.virtualWrite(V3, 255); // LED alarm nyala
-
+    Blynk.virtualWrite(V1, "ALARM: Tanah Kering");
   } else {
-    Blynk.virtualWrite(V1, "Tanah Basah");
-
-    // Matikan alarm
+    Blynk.virtualWrite(V0, "Tanah Basah");
     digitalWrite(buzzerPin, LOW);
-    Blynk.virtualWrite(V2, "Aman");
-    Blynk.virtualWrite(V3, 0);   // LED alarm mati
-  }
-
-  // Kontrol Pompa manual
-  if (pompaManual) {
-    digitalWrite(relayPin, LOW);  // Pompa ON
-  } else {
-    digitalWrite(relayPin, HIGH); // Pompa OFF
+    Blynk.virtualWrite(V1, "Aman");
   }
 }
 
 void setup() {
-  pinMode(relayPin, OUTPUT);
   pinMode(buzzerPin, OUTPUT);
-  digitalWrite(relayPin, HIGH);
   digitalWrite(buzzerPin, LOW);
 
   Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
-  timer.setInterval(2000L, sendSensor);
+  dht.begin();
+  timer.setInterval(2000L, sendSensor); // kirim data tiap 2 detik
 }
 
 void loop() {
