@@ -32,15 +32,14 @@ void sendSensor() {
   Blynk.virtualWrite(V3, kelembaban);
 
   // Cek status tanah
-  if (soilValue > soilThreshold) {
-    Blynk.virtualWrite(V0, "Tanah Kering");
-    digitalWrite(buzzerPin, HIGH);
-    Blynk.virtualWrite(V1, "ALARM: Tanah Kering");
-  } else {
-    Blynk.virtualWrite(V0, "Tanah Basah");
-    digitalWrite(buzzerPin, LOW);
-    Blynk.virtualWrite(V1, "Aman");
-  }
+if (soilValue > soilThreshold) {
+  Blynk.virtualWrite(V0, "Tanah Kering");
+  tone(buzzerPin, 1000);  // Nada 1000 Hz
+  Blynk.virtualWrite(V1, "ALARM: Tanah Kering");
+} else {
+  Blynk.virtualWrite(V0, "Tanah Basah");
+  noTone(buzzerPin);      // Matikan buzzer
+  Blynk.virtualWrite(V1, "Aman");
 }
 
 void setup() {
@@ -55,23 +54,6 @@ void setup() {
 void loop() {
   Blynk.run();
   timer.run();
-}
-
-
-
-
-
-
-
-versi tone/no tone
-if (soilValue > soilThreshold) {
-  Blynk.virtualWrite(V0, "Tanah Kering");
-  tone(buzzerPin, 1000);  // Nada 1000 Hz
-  Blynk.virtualWrite(V1, "ALARM: Tanah Kering");
-} else {
-  Blynk.virtualWrite(V0, "Tanah Basah");
-  noTone(buzzerPin);      // Matikan buzzer
-  Blynk.virtualWrite(V1, "Aman");
 }
 
 
